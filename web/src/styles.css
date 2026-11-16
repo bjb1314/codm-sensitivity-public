@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Chakra Petch", "Noto Sans SC", "PingFang SC", sans-serif;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --color-bg: #10140f;
+  --color-surface: #1a2118;
+  --color-fg: #e7f0e2;
+  --color-muted: #93a394;
+  --color-primary: #d6ff3f;
+  --color-primary-fg: #14180a;
+  --color-accent: #ff5a36;
+  --color-border: #2e3a2a;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  body {
+    min-height: 100vh;
+  }
+
+  .pb-safe {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  ::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+  }
+}
+
+/* Leave room for camera cutouts and rounded corners in either orientation. */
+.app-shell, .range-shell {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+.range-shell { height: 100dvh; }
+@supports not (height: 100dvh) {
+  .range-shell { height: 100vh; }
+}
+.range-shell .range-header, .range-shell .range-progress, .range-shell .range-hits {
+  padding-left: 0;
+  padding-right: 0;
+}
+.range-shell canvas { display: block; }
+.result-grid { display: grid; gap: 0.75rem; }
+@media (orientation: landscape) and (min-width: 640px) {
+  .habit-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .habit-layout > * { margin-top: 0; }
+  .habit-layout > p, .habit-layout > button { grid-column: 1 / -1; }
+}
+@media (orientation: landscape) and (min-width: 900px) {
+  .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Short landscape screens need most of their height for the aiming area. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app-shell { padding-top: max(0.5rem, env(safe-area-inset-top)); }
+  .step-nav { margin-top: 0.75rem; }
+  .range-shell { padding-top: max(0.25rem, env(safe-area-inset-top)); }
+  .range-header { padding-top: 0; padding-bottom: 0.25rem; }
+  .range-hits { padding-top: 0.25rem; padding-bottom: max(0.25rem, env(safe-area-inset-bottom)); }
+}
+
+/* Keep the range usable when the browser chrome leaves very little height. */
+@media (orientation: landscape) and (max-height: 360px) {
+  .range-header [data-testid="range-timer"] { font-size: 1.75rem; }
+  .range-header { gap: 0.5rem; }
+  .range-hits { font-size: 0.75rem; line-height: 1rem; }
+}
+
+.result-grid > div, .result-grid button { min-width: 0; }
+.result-grid button span { display: block; overflow-wrap: anywhere; }
