@@ -216,11 +216,13 @@ export function AimRange({
       const state = engine.current;
       if (!state || !pointer || pointer.id !== e.pointerId) return;
       if (e.pointerType === "touch" || e.pointerType === "pen") {
-        if (e.buttons === 0) return;
         e.preventDefault();
       }
-      pushPointer(state, e.clientX - pointer.x, e.clientY - pointer.y);
-      pointer.x = e.clientX; pointer.y = e.clientY;
+      const samples = e.getCoalescedEvents?.() ?? [];
+      for (const sample of [...samples, e]) {
+        pushPointer(state, sample.clientX - pointer.x, sample.clientY - pointer.y);
+        pointer.x = sample.clientX; pointer.y = sample.clientY;
+      }
     };
     const onDown = (e: PointerEvent) => {
       if (!engine.current) return;

@@ -147,6 +147,32 @@ test("a fast movement that ends on the target is not an overshoot", () => {
   assert.equal(s.overshoots, 0);
 });
 
+test("continuing beyond a hit on the next frame counts one overshoot", () => {
+  const s = createRun({ kind: "micro", gains: [1], now: 0, roundDuration: 5000, prerollMs: 0, minHalf: 200 });
+  step(s, 0);
+  s.targets[0].x = 0.4; s.targets[0].y = 0;
+  pushPointer(s, 80, 0);
+  step(s, 16);
+  assert.equal(s.hits, 1);
+  assert.equal(s.overshoots, 0);
+  pushPointer(s, 40, 0);
+  step(s, 32);
+  assert.equal(s.overshoots, 1);
+  step(s, 48);
+  assert.equal(s.overshoots, 1);
+});
+
+test("separate movements in the same frame do not cancel a sweep", () => {
+  const s = createRun({ kind: "micro", gains: [1], now: 0, roundDuration: 5000, prerollMs: 0, minHalf: 200 });
+  step(s, 0);
+  s.targets[0].x = 0.4; s.targets[0].y = 0;
+  pushPointer(s, 120, 0);
+  pushPointer(s, -120, 0);
+  step(s, 16);
+  assert.equal(s.hits, 1);
+  assert.equal(s.overshoots, 1);
+});
+
 test("background pause discards stale movement and excludes pause from acquisition time", () => {
   const s = createRun({ kind: "micro", gains: [1], now: 0, roundDuration: 5000, prerollMs: 0, minHalf: 200 });
   step(s, 0);

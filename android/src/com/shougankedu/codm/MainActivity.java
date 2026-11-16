@@ -10,6 +10,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.view.WindowManager;
+import android.view.Display;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 
@@ -17,6 +18,7 @@ public class MainActivity extends Activity {
  private WebView web;
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
+  requestSmoothDisplay();
   getWindow().setStatusBarColor(0xff171d15);
   getWindow().setNavigationBarColor(0xff171d15);
   web = new WebView(this);
@@ -40,6 +42,23 @@ public class MainActivity extends Activity {
   });
   setContentView(web);
   web.loadUrl("https://appassets.local/index.html");
+ }
+ private void requestSmoothDisplay() {
+  Display display = getWindowManager().getDefaultDisplay();
+  if (display == null) return;
+  Display.Mode current = display.getMode();
+  Display.Mode best = null;
+  for (Display.Mode mode : display.getSupportedModes()) {
+   float rate = mode.getRefreshRate();
+   if (mode.getPhysicalWidth() != current.getPhysicalWidth() || mode.getPhysicalHeight() != current.getPhysicalHeight()) continue;
+   if (rate < 59f || rate > 144.5f) continue;
+   if (best == null || rate > best.getRefreshRate()) best = mode;
+  }
+  if (best != null) {
+   WindowManager.LayoutParams params = getWindow().getAttributes();
+   params.preferredDisplayModeId = best.getModeId();
+   getWindow().setAttributes(params);
+  }
  }
  final class ClipboardBridge {
   @JavascriptInterface public boolean copy(String value) {

@@ -60,6 +60,12 @@
   padding-right: 0;
 }
 .range-shell canvas { display: block; }
+/* Keep the touch surface as large as possible on both wide phones and 7:5 tablets. */
+.range-shell > .relative { min-width: 0; }
+@media (orientation: landscape) and (min-height: 600px) {
+  .range-header, .range-progress, .range-hits { width: 100%; }
+  .range-hits { font-size: 1rem; }
+}
 .result-grid { display: grid; gap: 0.75rem; }
 @media (orientation: landscape) and (min-width: 640px) {
   .habit-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }

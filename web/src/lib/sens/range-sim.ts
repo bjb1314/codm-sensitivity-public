@@ -43,6 +43,8 @@ export type RunState = {
   aimY: number;
   pendingPx: number;
   pendingPy: number;
+  pendingMoves: { x: number; y: number }[];
+  recentHits: { x: number; y: number; r: number; ux: number; uy: number; at: number }[];
   velX: number;
   velY: number;
   minHalf: number;
@@ -146,6 +148,8 @@ export function createRun(opts: {
     aimY: 0,
     pendingPx: 0,
     pendingPy: 0,
+    pendingMoves: [],
+    recentHits: [],
     velX: 0,
     velY: 0,
     minHalf: opts.minHalf && opts.minHalf > 0 ? opts.minHalf : 180,
@@ -185,6 +189,7 @@ export function pushPointer(state: RunState, movementX: number, movementY: numbe
   if (state.mode !== "live" && state.mode !== "preroll") return;
   state.pendingPx += movementX;
   state.pendingPy += movementY;
+  state.pendingMoves.push({ x: movementX, y: movementY });
 }
 
 function applyPointer(state: RunState, dt: number) {
@@ -244,6 +249,16 @@ function scoreTrack(state: RunState, dt: number) {
 }
 
 function resolveHits(state: RunState, now: number, oldX: number, oldY: number) {
+  state.recentHits = state.recentHits.filter((hit) => {
+    if (now - hit.at > 180) return false;
+    const along = (state.aimX - hit.x) * hit.ux + (state.aimY - hit.y) * hit.uy;
+    const lateral = Math.abs((state.aimX - hit.x) * hit.uy - (state.aimY - hit.y) * hit.ux);
+    if (along > hit.r && lateral < hit.r * 2) {
+      state.overshoots += 1;
+      return false;
+    }
+    return true;
+  });
   const keep: Target[] = [];
   let removed = 0;
   for (const t of state.targets) {
@@ -256,6 +271,10 @@ function resolveHits(state: RunState, now: number, oldX: number, oldY: number) {
       state.hits += 1;
       state.acquireSum += Math.max(0, now - t.born);
       if (!touching(state, t)) state.overshoots += 1;
+      else {
+        const len = Math.hypot(dx, dy);
+        if (len > 0) state.recentHits.push({ x: t.x, y: t.y, r: t.r + GRACE, ux: dx / len, uy: dy / len, at: now });
+      }
       state.particles.push({ x: t.x, y: t.y, born: now });
       removed += 1;
     } else {
@@ -315,6 +334,8 @@ function beginLive(state: RunState, now: number) {
   state.velY = 0;
   state.pendingPx = 0;
   state.pendingPy = 0;
+  state.pendingMoves = [];
+  state.recentHits = [];
   state.aimX = 0;
   state.aimY = 0;
   state.particles = [];
@@ -334,6 +355,8 @@ function endRound(state: RunState, now: number) {
   state.lastNow = now;
   state.pendingPx = 0;
   state.pendingPy = 0;
+  state.pendingMoves = [];
+  state.recentHits = [];
   state.aimX = 0;
   state.aimY = 0;
   state.targets = [];
@@ -346,6 +369,7 @@ export function step(state: RunState, now: number) {
     const dt = Math.min(0.05, Math.max(0, (now - state.lastNow) / 1000));
     if (state.mode === "preroll") {
       applyPointer(state, dt);
+      state.pendingMoves = [];
       moveTargets(state, dt);
     }
     state.lastNow = now;
@@ -355,12 +379,21 @@ export function step(state: RunState, now: number) {
 
   const dt = Math.min(0.05, Math.max(0, (now - state.lastNow) / 1000));
   state.lastNow = now;
-  const oldX = state.aimX;
-  const oldY = state.aimY;
-  applyPointer(state, dt);
+  const moves = state.pendingMoves.splice(0);
+  state.pendingPx = 0;
+  state.pendingPy = 0;
+  if (moves.length === 0) applyPointer(state, dt);
+  for (const move of moves) {
+    const oldX = state.aimX;
+    const oldY = state.aimY;
+    state.pendingPx = move.x;
+    state.pendingPy = move.y;
+    applyPointer(state, dt);
+    if (state.kind !== "track") resolveHits(state, now, oldX, oldY);
+  }
   moveTargets(state, dt);
   if (state.kind === "track") scoreTrack(state, dt);
-  else resolveHits(state, now, oldX, oldY);
+  else if (moves.length === 0) resolveHits(state, now, state.aimX, state.aimY);
   if (now >= state.modeEnds) endRound(state, now);
 }
 
@@ -370,6 +403,8 @@ export function pauseRun(state: RunState, now: number) {
   state.pauseStarted = now;
   state.pendingPx = 0;
   state.pendingPy = 0;
+  state.pendingMoves = [];
+  state.recentHits = [];
   state.velX = 0;
   state.velY = 0;
   state.mode = "paused";
