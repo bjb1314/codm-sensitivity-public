@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
   super.onCreate(state);
   requestSmoothDisplay();
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-  getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+  enterFullscreen();
   getWindow().setStatusBarColor(0xff171d15);
   getWindow().setNavigationBarColor(0xff171d15);
   web = new WebView(this);
@@ -47,6 +47,16 @@ public class MainActivity extends Activity {
   setContentView(web);
   web.loadUrl("https://appassets.local/index.html");
  }
+ private void enterFullscreen() {
+  getWindow().getDecorView().setSystemUiVisibility(
+    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN |
+    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+ }
+ @Override public void onWindowFocusChanged(boolean hasFocus) {
+  super.onWindowFocusChanged(hasFocus);
+  if (hasFocus) enterFullscreen();
+ }
  private void requestSmoothDisplay() {
   Display display = getWindowManager().getDefaultDisplay();
   if (display == null) return;
@@ -70,6 +80,21 @@ public class MainActivity extends Activity {
    catch (Exception e) { return false; }
   }
  }
- @Override public void onBackPressed() { if(web.canGoBack()) web.goBack(); else super.onBackPressed(); }
+ private boolean backPending;
+ @Override public void onBackPressed() {
+  if (backPending) return;
+  backPending = true;
+  web.evaluateJavascript(
+    "(function () { var exit = document.querySelector('[data-range-exit]');" +
+    " if (!exit) return false; exit.click(); return true; })()",
+    new android.webkit.ValueCallback<String>() {
+     @Override public void onReceiveValue(String handled) {
+     backPending = false;
+     if (isFinishing() || isDestroyed() || "true".equals(handled)) return;
+     if (web.canGoBack()) web.goBack();
+     else MainActivity.super.onBackPressed();
+     }
+    });
+ }
  @Override protected void onDestroy() { web.destroy(); super.onDestroy(); }
 }
