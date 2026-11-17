@@ -11,6 +11,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.view.WindowManager;
 import android.view.Display;
+import android.view.View;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 
@@ -19,12 +20,15 @@ public class MainActivity extends Activity {
  @Override public void onCreate(Bundle state) {
   super.onCreate(state);
   requestSmoothDisplay();
+  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+  getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
   getWindow().setStatusBarColor(0xff171d15);
   getWindow().setNavigationBarColor(0xff171d15);
   web = new WebView(this);
   web.setBackgroundColor(0xff171d15);
   web.getSettings().setJavaScriptEnabled(true);
   web.getSettings().setDomStorageEnabled(true);
+  web.getSettings().setUseWideViewPort(true);
   web.getSettings().setAllowFileAccess(false);
   web.getSettings().setAllowContentAccess(false);
   web.getSettings().setSupportMultipleWindows(false);
